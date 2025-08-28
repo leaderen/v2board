@@ -80,13 +80,6 @@ class OrderController extends Controller
             abort(500, __('You have an unpaid or pending order, please try again later or cancel it'));
         }
         if ($request->input('plan_id') == 0) {
-            $amount = $request->input('deposit_amount');
-            if ($amount <= 0) {
-                abort(500, __('Failed to create order, deposit amount must be greater than 0'));
-            }
-            if ($amount >= 9999999 ) {
-                abort(500, __('Deposit amount too large, please contact the administrator'));
-            }
             $user = User::find($request->user['id']);
             DB::beginTransaction();
             $order = new Order();
@@ -95,7 +88,7 @@ class OrderController extends Controller
             $order->plan_id = $request->input('plan_id');
             $order->period = 'deposit';
             $order->trade_no = Helper::generateOrderNo();
-            $order->total_amount = $amount;
+            $order->total_amount = $request->input('deposit_amount');
             
             $orderService->setOrderType($user);
             $orderService->setInvite($user);
@@ -208,6 +201,7 @@ class OrderController extends Controller
     {
         $tradeNo = $request->input('trade_no');
         $method = $request->input('method');
+        $referer = $request->headers->get('referer');
         $order = Order::where('trade_no', $tradeNo)
             ->where('user_id', $request->user['id'])
             ->where('status', 0)
@@ -238,7 +232,7 @@ class OrderController extends Controller
             'total_amount' => isset($order->handling_amount) ? ($order->total_amount + $order->handling_amount) : $order->total_amount,
             'user_id' => $order->user_id,
             'stripe_token' => $request->input('token')
-        ]);
+        ], $referer);
         return response([
             'type' => $result['type'],
             'data' => $result['data']

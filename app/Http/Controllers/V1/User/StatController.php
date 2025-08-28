@@ -11,18 +11,20 @@ class StatController extends Controller
 {
     public function getTrafficLog(Request $request)
     {
-        $builder = StatUser::select([
+        $logs = StatUser::select([
             'u',
             'd',
             'record_at',
             'user_id',
-            'server_rate'
+            DB::raw('1 as server_rate') // 这里把倍率固定成1
         ])
-            ->where('user_id', $request->user['id'])
-            ->where('record_at', '>=', strtotime(date('Y-m-1')))
-            ->orderBy('record_at', 'DESC');
+        ->where('user_id', $request->user['id'])
+        ->where('record_at', '>=', strtotime(date('Y-m-1')))
+        ->orderBy('record_at', 'DESC')
+        ->get();
+
         return response([
-            'data' => $builder->get()
+            'data' => $logs
         ]);
     }
 }
